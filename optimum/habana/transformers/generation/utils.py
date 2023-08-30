@@ -1147,7 +1147,10 @@ class GaudiGenerationMixin(GenerationMixin):
         hb_profer = HabanaProfile(warmup=profiling_warmup_steps, active=profiling_steps)
         hb_profer.start()
         this_peer_finished = False  # used by synced_gpus only
+        import time
+        latency_list = []
         while True:
+            t1 = time.time()
             if lazy_mode:
                 self.htcore_generation.mark_step()
 
@@ -1231,6 +1234,7 @@ class GaudiGenerationMixin(GenerationMixin):
                 )
 
             hb_profer.step()
+            latency_list.append(time.time() - t1)
             # stop if we exceed the maximum length, or when each sentence is finished (eager mode only)
             if (not ignore_eos and unfinished_sequences.max() == 0) or stopping_criteria(input_ids, scores):
                 if not synced_gpus:
@@ -1251,16 +1255,16 @@ class GaudiGenerationMixin(GenerationMixin):
                     decoder_attentions=decoder_attentions,
                     cross_attentions=cross_attentions,
                     decoder_hidden_states=decoder_hidden_states,
-                )
+                ), latency_list
             else:
                 return GreedySearchDecoderOnlyOutput(
                     sequences=input_ids,
                     scores=scores,
                     attentions=decoder_attentions,
                     hidden_states=decoder_hidden_states,
-                )
+                ), latency_list
         else:
-            return input_ids
+            return input_ids, latency_list
 
     def sample(
         self,
