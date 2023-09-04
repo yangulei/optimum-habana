@@ -1,3 +1,8 @@
+hl-prof-config -e off -phase=multi-enq -g 1-2000 -s train_llama_torch_0904am-g1_2000
+export GRAPH_VISUALIZATION=1
+export HABANA_PROFILE=1
+export LOG_LEVEL_PT_FALLBACK=1
+
 python ../gaudi_spawn.py \
     --world_size 8 --use_deepspeed run_lora_clm.py \
     --model_name_or_path huggyllama/llama-7b \
