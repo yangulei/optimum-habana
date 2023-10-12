@@ -1,0 +1,51 @@
+{
+    "bf16": {
+        "enabled": true
+    },
+    "data_types": {
+        "grad_accum_dtype": "bf16"
+    },
+    "communication_data_type": "bfp16",
+    "fp16": {
+        "enabled": false
+    },
+    "amp": {
+        "enabled": false
+    },
+    "optimizer": {
+        "type": "AdamW",
+        "params": {
+            "lr": "auto",
+            "betas": "auto",
+            "eps": "auto",
+            "weight_decay": "auto"
+        }
+    },
+    "scheduler": {
+        "type": "WarmupLR",
+        "params": {
+            "warmup_min_lr": "auto",
+            "warmup_max_lr": "auto",
+            "warmup_num_steps": "auto"
+        }
+    },
+    "zero_optimization": {
+        "stage": 1,
+        "allgather_bucket_size": 5e8,
+        "overlap_comm": false,
+        "reduce_bucket_size": 5e8,
+        "stage3_prefetch_bucket_size": "auto",
+        "stage3_param_persistence_threshold": "auto"
+    },
+    "gradient_clipping": 1.0,
+    "train_batch_size": "auto",
+    "train_micro_batch_size_per_gpu": "auto",
+    "gradient_accumulation_steps": "auto",
+    "flops_profiler": {
+        "enabled": true,
+        "module_depth": 0,
+        "detailed": false,
+        "profile_step": 8
+    },
+    "wall_clock_breakdown": false
+}

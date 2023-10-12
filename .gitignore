@@ -133,3 +133,6 @@ dmypy.json
 
 # ruff
 .ruff_cache
+
+# tests in examples
+examples/language-modeling/test*
