@@ -136,3 +136,4 @@ dmypy.json
 
 # tests in examples
 examples/language-modeling/test*
+examples/language-modeling/res*
