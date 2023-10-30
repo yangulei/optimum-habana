@@ -1,10 +1,13 @@
-set -e
+# set -e
 
 for zero in {1,2,3}; do
     for mb in {1,2,4,8}; do
         for perf_warmup in {0,15}; do
             perf_steps=2
-            res_dir=res-clm-gpt-neox-20b-zero${zero}-offload-mb${mb}-ddp4-perf${perf_warmup}-${perf_warmup+${perf_steps}}
+            res_dir=res-clm-gpt-neox-20b-zero${zero}-mb${mb}-ddp8-perf${perf_warmup}-$((${perf_warmup}+${perf_steps}))
+            if [ -d "$res_dir" ]; then
+                continue
+            fi
             mkdir -p ${res_dir}
 
             GRAPH_VISUALIZATION=1 \
@@ -36,6 +39,9 @@ for zero in {1,2,3}; do
                 2>&1 \
                 | tee ${res_dir}/run.log
             rm ${res_dir}/pytorch_model*
+            if [ ${zero} -eq 3 ]; then
+                rm -r ${res_dir}/global_step*
+            fi
             if [ ${perf_warmup} -gt 0 ]; then
                 cd hpu_profile
                 for fn in *.json; do

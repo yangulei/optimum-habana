@@ -3,7 +3,7 @@ mkdir -p ${res_dir}
 python ../gaudi_spawn.py \
     --world_size 8 --use_deepspeed run_clm_llama.py \
     --model_name_or_path /mnt/decapoda-research/llama-7b-hf \
-    --cache_dir /mnt/hf_model/ \
+    --cache_dir /mnt/hf_cache/ \
     --torch_dtype bfloat16 \
     --use_cache False \
     --dataset_name wikitext \
@@ -37,7 +37,7 @@ mkdir -p ${res_dir}
 python ../gaudi_spawn.py \
     --world_size 8 --use_deepspeed run_clm_llama.py \
     --model_name_or_path /mnt/decapoda-research/llama-7b-hf \
-    --cache_dir /mnt/hf_model/ \
+    --cache_dir /mnt/hf_cache/ \
     --torch_dtype bfloat16 \
     --use_cache False \
     --dataset_name wikitext \
@@ -71,7 +71,7 @@ mkdir -p ${res_dir}
 python ../gaudi_spawn.py \
     --world_size 8 --use_deepspeed run_clm_llama.py \
     --model_name_or_path /mnt/decapoda-research/llama-7b-hf \
-    --cache_dir /mnt/hf_model/ \
+    --cache_dir /mnt/hf_cache/ \
     --torch_dtype bfloat16 \
     --use_cache False \
     --dataset_name wikitext \
@@ -105,7 +105,7 @@ mkdir -p ${res_dir}
 python ../gaudi_spawn.py \
     --world_size 8 --use_deepspeed run_clm_llama.py \
     --model_name_or_path /mnt/decapoda-research/llama-7b-hf \
-    --cache_dir /mnt/hf_model/ \
+    --cache_dir /mnt/hf_cache/ \
     --torch_dtype bfloat16 \
     --use_cache False \
     --dataset_name wikitext \
@@ -139,7 +139,7 @@ mkdir -p ${res_dir}
 python ../gaudi_spawn.py \
     --world_size 8 --use_deepspeed run_clm_llama.py \
     --model_name_or_path /mnt/decapoda-research/llama-7b-hf \
-    --cache_dir /mnt/hf_model/ \
+    --cache_dir /mnt/hf_cache/ \
     --torch_dtype bfloat16 \
     --use_cache False \
     --dataset_name wikitext \
