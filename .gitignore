@@ -133,3 +133,5 @@ dmypy.json
 
 # ruff
 .ruff_cache
+
+examples/text-generation/res*
