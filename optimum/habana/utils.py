@@ -245,7 +245,7 @@ class HabanaProfile(object):
         self,
         warmup: int = 0,
         active: int = 0,
-        record_shapes: bool = True,
+        record_shapes: bool = False,
         output_dir: str = "./hpu_profile",
         wait: int = 0,
     ):
