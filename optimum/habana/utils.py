@@ -243,13 +243,13 @@ class HabanaProfile(object):
 
     def __init__(
         self,
-        warmup: int = 0,
+        warmup: int = -1,
         active: int = 0,
         record_shapes: bool = True,
         output_dir: str = "./hpu_profile",
         wait: int = 0,
     ):
-        if active <= 0 or warmup <= 0 or not HabanaProfile.HABANA_PROFILE_ENABLED:
+        if active <= 0 or warmup < 0 or not HabanaProfile.HABANA_PROFILE_ENABLED:
 
             def noop():
                 pass
