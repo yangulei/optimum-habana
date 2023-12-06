@@ -1,4 +1,3 @@
-# Use a pipeline as a high-level helper
-from transformers import pipeline
+from huggingface_hub import snapshot_download
 
-pipe = pipeline("text-generation", model="abhinand/llama-2-13b-hf-bf16-sharded", trust_remote_code=True)
+snapshot_download(repo_id="meta-llama/Llama-2-13b-hf", cache_dir="/nfs_home_youleiya/hf_cache/hub/")
