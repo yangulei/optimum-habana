@@ -302,49 +302,49 @@ def main():
         HabanaProfile.enable()
         total_new_tokens_generated = 0
         logger.info("Running generate...")
-        t0 = time.perf_counter()
         # Benchmark over n_iterations iterations
         for i in range(args.n_iterations):
+            t0 = time.perf_counter()
             generated = generate()
-        duration = time.perf_counter() - t0
-        total_new_tokens_generated = args.n_iterations * args.batch_size * args.max_new_tokens
-        throughput = total_new_tokens_generated / duration
+            duration = time.perf_counter() - t0
+            total_new_tokens_generated = args.batch_size * args.max_new_tokens
+            throughput = total_new_tokens_generated / duration
 
-        print()
-        print("Input/outputs:")
-        for i, input_sentence in enumerate(zip(input_sentences)):
-            print(f"input {i+1}: {input_sentence}")
-            for j, output in enumerate(
-                zip(generated[args.num_return_sequences * i : args.num_return_sequences * (i + 1)])
-            ):
-                print(f"output {j+1}: {output}")
             print()
+            print("Input/outputs:")
+            for i, input_sentence in enumerate(zip(input_sentences)):
+                print(f"input {i+1}: {input_sentence}")
+                for j, output in enumerate(
+                    zip(generated[args.num_return_sequences * i : args.num_return_sequences * (i + 1)])
+                ):
+                    print(f"output {j+1}: {output}")
+                print()
 
-        # Store results if necessary
-        if args.output_dir is not None and args.global_rank == 0:
-            output_dir = Path(args.output_dir)
-            output_dir.mkdir(parents=True, exist_ok=True)
+            # Store results if necessary
+            if args.output_dir is not None and args.global_rank == 0:
+                output_dir = Path(args.output_dir)
+                output_dir.mkdir(parents=True, exist_ok=True)
 
-            results = {
-                "throughput": throughput,
-                "output": output,
-            }
-            with (output_dir / "results.json").open("w", encoding="utf-8") as f:
-                json.dump(results, f, ensure_ascii=False, indent=4)
+                results = {
+                    "throughput": throughput,
+                    "output": output,
+                }
+                with (output_dir / "results.json").open("w", encoding="utf-8") as f:
+                    json.dump(results, f, ensure_ascii=False, indent=4)
 
-        stats = f"Throughput (including tokenization) = {throughput} tokens/second"
-        stats = stats + f"\nNumber of HPU graphs                = {count_hpu_graphs()}"
-        separator = "-" * len(stats)
-        print()
-        print("Stats:")
-        print(separator)
-        print(stats)
-        mem = get_hpu_memory_stats()
-        for k, v in mem.items():
-            print("{:35} = {} GB".format(k[:-5].replace("_", " ").capitalize(), v))
-        print(f"Graph compilation duration          = {compilation_duration} seconds")
-        print(separator)
-        print()
+            stats = f"Throughput (including tokenization) = {throughput} tokens/second"
+            stats = stats + f"\nNumber of HPU graphs                = {count_hpu_graphs()}"
+            separator = "-" * len(stats)
+            print()
+            print("Stats:")
+            print(separator)
+            print(stats)
+            mem = get_hpu_memory_stats()
+            for k, v in mem.items():
+                print("{:35} = {} GB".format(k[:-5].replace("_", " ").capitalize(), v))
+            print(f"Graph compilation duration          = {compilation_duration} seconds")
+            print(separator)
+            print()
     else:
         # Downloading and loading a dataset from the hub.
         from datasets import load_dataset
