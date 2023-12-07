@@ -27,6 +27,9 @@ from pathlib import Path
 import torch
 from utils import count_hpu_graphs, initialize_model
 
+import os
+from transformers.generation.streamers import BaseStreamer
+
 from optimum.habana.utils import get_hpu_memory_stats
 
 
@@ -37,6 +40,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+class TimeStampStreamer(BaseStreamer):
+    def __init__(self) -> None:
+        self.enabled = False
+        self.timestamps = []
+        self.count = 0
+    
+    def start(self) -> None:
+        self.clear()
+        self.enabled = True
+        self.count += 1
+    
+    def clear(self) -> None:
+        self.timestamps = []
+    
+    def save(self, fn) -> None:
+        with open(fn, 'w') as f:
+            f.write('\n'.join(str(timestamp) for timestamp in self.timestamps))
+    
+    def put(self, value):
+        if self.enabled:
+            self.timestamps.append(time.perf_counter_ns())
+    
+    def end(self):
+        if self.timestamps:
+            self.save('timestamps-{}-{}.csv'.format(os.getpid(), self.count))
+        self.clear()
+        self.enabled = False
 
 def setup_parser(parser):
     # Arguments management
@@ -64,6 +94,16 @@ def setup_parser(parser):
     )
     parser.add_argument("--batch_size", type=int, default=1, help="Input batch size.")
     parser.add_argument("--warmup", type=int, default=3, help="Number of warmup iterations for benchmarking.")
+    parser.add_argument(
+        "--warmup_timestamps",
+        action="store_true",
+        help="Whether to record the timestamps for token generation during warmup to 'timestamps-<pid>-<step>.csv'.",
+    )
+    parser.add_argument(
+        "--generation_timestamps",
+        action="store_true",
+        help="Whether to record the timestamps for token generation during generation to 'timestamps-<pid>-<step>.csv'.",
+    )
     parser.add_argument("--n_iterations", type=int, default=5, help="Number of inference iterations for benchmarking.")
     parser.add_argument("--local_rank", type=int, default=0, metavar="N", help="Local process rank.")
     parser.add_argument(
@@ -227,6 +267,7 @@ def main():
     model, tokenizer, generation_config = initialize_model(args, logger)
 
     import habana_frameworks.torch.hpu as torch_hpu
+    streamer = TimeStampStreamer() if args.warmup_timestamps or args.generation_timestamps else None
 
     if args.dataset_name is None:
         # Benchmark over the prompts below
@@ -254,6 +295,9 @@ def main():
 
         def generate():
             """Generates sequences from the input sentences and returns them."""
+            
+            if streamer is not None:
+                streamer.start()
 
             # Tokenization
             if args.max_input_tokens > 0:
@@ -275,11 +319,16 @@ def main():
             outputs = model.generate(
                 **input_tokens,
                 generation_config=generation_config,
+                streamer=streamer,
                 lazy_mode=True,
                 hpu_graphs=args.use_hpu_graphs,
                 profiling_steps=args.profiling_steps,
                 profiling_warmup_steps=args.profiling_warmup_steps,
             ).cpu()
+
+            if streamer is not None:
+                streamer.end()
+
             return tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
         from optimum.habana.utils import HabanaProfile
@@ -294,6 +343,9 @@ def main():
             generate()
         torch_hpu.synchronize()
         compilation_duration = time.perf_counter() - t0
+        
+        if not args.generation_timestamps:
+            streamer = None
         HabanaProfile.enable()
         total_new_tokens_generated = 0
         logger.info("Running generate...")
