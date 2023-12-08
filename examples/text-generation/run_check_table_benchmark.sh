@@ -100,14 +100,18 @@ for in_out_dims in ${in_out_sizes[@]}; do
         res_dir=gaudi2_${model_name}_I_bs${bs}_in${input_tokens}_out${output_tokens}_bw1_1c
         log=${res_dir}/run.log
         if [ -d "$res_dir" ]; then
-            if [[ `grep ERROR $log` ]] || [[ `grep Throughput $log` ]]; then
-                echo "results already exists, skip."
+            if [[ `grep Throughput $log` ]]; then
+                echo "results for ${model_name} with bs=${bs}, input_tokens=${input_tokens}, output_tokens=${output_tokens} already exists, skip."
                 continue
+            fi
+            if [[ `grep failed $log` ]]; then
+                echo "'failed' found in benchmarking ${model_name} with bs=${bs}, input_tokens=${input_tokens}, output_tokens=${output_tokens}, skip larger BS"
+                break
             fi
         fi
         mkdir -p ${res_dir}
 
-        echo "Benchmarking with bs=${bs}, input_tokens=${input_tokens}, output_tokens=${output_tokens}"
+        echo "Benchmarking with ${model_name} bs=${bs}, input_tokens=${input_tokens}, output_tokens=${output_tokens}"
         HF_DATASETS_OFFLINE=1 \
         TRANSFORMERS_OFFLINE=1 \
         HF_EVALUATE_OFFLINE=1 \
@@ -133,12 +137,12 @@ for in_out_dims in ${in_out_sizes[@]}; do
             > $log 2>&1
         mv .graph_dumps hpu_profile checkpoints.json $res_dir
 
-        if [[ `grep ERROR $log` ]]
+        if [[ `grep failed $log` ]]
         then
-            echo ERROR found for benchmarking for bs=${bs}, input_tokens=${input_tokens}, output_tokens=${output_tokens}, skip larger BS
+            echo "'failed' found in benchmarking ${model_name} with bs=${bs}, input_tokens=${input_tokens}, output_tokens=${output_tokens}, skip larger BS"
             break
         else
-            echo Done benchmarking for bs=${bs}, input_tokens=${input_tokens}, output_tokens=${output_tokens}
+            echo "Done benchmarking ${model_name} with bs=${bs}, input_tokens=${input_tokens}, output_tokens=${output_tokens}"
         fi
     done    # bs
 done    # in_out_sizes
