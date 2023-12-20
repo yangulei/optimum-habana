@@ -126,6 +126,7 @@ for in_out_dims in ${in_out_sizes[@]}; do
             --use_kv_cache \
             --batch_size ${bs} \
             --n_iterations 5 \
+            --attn_softmax_bf16 \
             ${arg_limit_hpu_graphs} \
             --reuse_cache \
             --trim_logits \
