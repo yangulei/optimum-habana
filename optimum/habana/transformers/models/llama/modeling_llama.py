@@ -85,6 +85,15 @@ def gaudi_llama_repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tens
     hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
+def gaudi_llama_reshape_qs(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
+    batch, num_query_heads, slen, head_dim = hidden_states.shape
+    hidden_states = hidden_states.reshape(batch, num_query_heads // n_rep, n_rep, slen, head_dim)
+    return hidden_states
+
+def gaudi_llama_reshape_kv(hidden_states: torch.Tensor) -> torch.Tensor:
+    batch, num_key_value_heads, slen, head_dim = hidden_states.shape
+    hidden_states = hidden_states.reshape(batch, num_key_value_heads, 1, slen, head_dim)
+    return hidden_states
 
 class Matmul(torch.nn.Module):
     def __init__(self):
@@ -229,10 +238,10 @@ class GaudiLlamaAttention(LlamaAttention):
         else:
             past_key_value = None
 
-        key_states = gaudi_llama_repeat_kv(key_states, self.num_key_value_groups)
-        value_states = gaudi_llama_repeat_kv(value_states, self.num_key_value_groups)
-
         if use_flash_attention and FusedSDPA:
+            key_states = gaudi_llama_repeat_kv(key_states, self.num_key_value_groups)
+            value_states = gaudi_llama_repeat_kv(value_states, self.num_key_value_groups)
+
             import habana_frameworks.torch.hpu as ht
 
             if q_len == 1:
@@ -247,7 +256,12 @@ class GaudiLlamaAttention(LlamaAttention):
                     attn_output = FusedSDPA.apply(query_states, key_states, value_states, None, 0.0, True, None)
 
         else:
-            attn_weights = self.matmul_qk(query_states, key_states.transpose(2, 3)) * self.norm_factor
+            query_states = gaudi_llama_reshape_qs(query_states, self.num_key_value_groups)
+            key_states = gaudi_llama_reshape_kv(key_states)
+            value_states = gaudi_llama_reshape_kv(value_states)
+            
+            attn_weights = self.matmul_qk(query_states, key_states.transpose(3, 4)) * self.norm_factor
+            attn_weights = attn_weights.reshape(bsz, self.num_heads, q_len, kv_seq_len)
 
             if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
                 raise ValueError(
@@ -270,7 +284,8 @@ class GaudiLlamaAttention(LlamaAttention):
                     query_states.dtype
                 )
 
-            attn_output = self.matmul_av(attn_weights, value_states)
+            attn_output = gaudi_llama_reshape_qs(attn_weights, self.num_key_value_groups)
+            attn_output = self.matmul_av(attn_output, value_states).reshape(bsz, self.num_heads, q_len, self.head_dim)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
