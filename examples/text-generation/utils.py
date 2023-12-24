@@ -324,6 +324,7 @@ def setup_generation_config(args, model, tokenizer):
     generation_config.attn_softmax_bf16 = args.attn_softmax_bf16
     generation_config.limit_hpu_graphs = args.limit_hpu_graphs
     generation_config.reuse_cache = args.reuse_cache
+    generation_config.use_flash_attention = args.use_flash_attention
     generation_config.reduce_recompile = args.reduce_recompile
     if generation_config.reduce_recompile:
         assert generation_config.bucket_size > 0
