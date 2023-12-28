@@ -228,50 +228,52 @@ class GaudiLlamaAttention(LlamaAttention):
                 past_key_value = (key_states.contiguous(), value_states.contiguous())
         else:
             past_key_value = None
+        
+        query_states_list = torch.chunk(query_states, self.num_key_value_groups, dim=1)
+        attn_output_list = []
+        for query_states in query_states_list:
+            if use_flash_attention and FusedSDPA:
+                import habana_frameworks.torch.hpu as ht
 
-        key_states = gaudi_llama_repeat_kv(key_states, self.num_key_value_groups)
-        value_states = gaudi_llama_repeat_kv(value_states, self.num_key_value_groups)
+                if q_len == 1:
+                    # next token
+                    with ht.sdp_kernel(enable_recompute=False):
+                        attn_output = FusedSDPA.apply(
+                            query_states, key_states, value_states, attention_mask, 0.0, False, None
+                        )
+                else:
+                    # first token
+                    with ht.sdp_kernel(enable_recompute=flash_attention_recompute):
+                        attn_output = FusedSDPA.apply(query_states, key_states, value_states, None, 0.0, True, None)
 
-        if use_flash_attention and FusedSDPA:
-            import habana_frameworks.torch.hpu as ht
-
-            if q_len == 1:
-                # next token
-                with ht.sdp_kernel(enable_recompute=False):
-                    attn_output = FusedSDPA.apply(
-                        query_states, key_states, value_states, attention_mask, 0.0, False, None
-                    )
             else:
-                # first token
-                with ht.sdp_kernel(enable_recompute=flash_attention_recompute):
-                    attn_output = FusedSDPA.apply(query_states, key_states, value_states, None, 0.0, True, None)
+                attn_weights = self.matmul_qk(query_states, key_states.transpose(2, 3)) * self.norm_factor
 
-        else:
-            attn_weights = self.matmul_qk(query_states, key_states.transpose(2, 3)) * self.norm_factor
-
-            if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
-                raise ValueError(
-                    f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
-                    f" {attn_weights.size()}"
-                )
-
-            if attention_mask is not None:
-                if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
+                if attn_weights.size() != (bsz, self.num_key_value_heads, q_len, kv_seq_len):
                     raise ValueError(
-                        f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
+                        f"Attention weights should be of size {(bsz, self.num_key_value_heads, q_len, kv_seq_len)}, but is"
+                        f" {attn_weights.size()}"
                     )
-                attn_weights = attn_weights + attention_mask
 
-            if attn_softmax_bf16:
-                attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=query_states.dtype)
-            else:
-                # upcast attention to fp32
-                attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
-                    query_states.dtype
-                )
+                if attention_mask is not None:
+                    if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
+                        raise ValueError(
+                            f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
+                        )
+                    attn_weights = attn_weights + attention_mask
 
-            attn_output = self.matmul_av(attn_weights, value_states)
+                if attn_softmax_bf16:
+                    attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=query_states.dtype)
+                else:
+                    # upcast attention to fp32
+                    attn_weights = torch.nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
+                        query_states.dtype
+                    )
 
+                attn_output = self.matmul_av(attn_weights, value_states)
+            attn_output_list.append(attn_output)
+
+        attn_output = torch.cat(attn_output_list, dim=1)
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
                 f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is"
