@@ -49,6 +49,11 @@ def setup_parser(parser):
         help="Path to pre-trained model (on the HF Hub or locally).",
     )
     parser.add_argument(
+        "--trust_remote_code",
+        action="store_true",
+        help="Whether or not to allow for custom models defined on the Hub in their own modeling files.",
+    )
+    parser.add_argument(
         "--bf16",
         action="store_true",
         help="Whether to perform generation in bf16 precision.",

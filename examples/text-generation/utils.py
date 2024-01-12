@@ -239,6 +239,7 @@ def peft_model(args, model_dtype, logger, **model_kwargs):
 
 def setup_tokenizer(args, model):
     tokenizer_kwargs = {
+        "trust_remote_code": args.trust_remote_code,
         "revision": args.model_revision,
         "token": args.token,
     }
@@ -277,6 +278,7 @@ def setup_generation_config(args, model, tokenizer):
     is_optimized = model_is_optimized(model.config)
     # Generation configuration
     generation_config = copy.deepcopy(model.generation_config)
+    generation_config.trust_remote_code = args.trust_remote_code
     generation_config.max_new_tokens = args.max_new_tokens
     generation_config.use_cache = args.use_kv_cache
     generation_config.static_shapes = is_optimized
@@ -310,6 +312,7 @@ def initialize_model(args, logger):
         args.attn_softmax_bf16 = False
 
     model_kwargs = {
+        "trust_remote_code": args.trust_remote_code,
         "revision": args.model_revision,
         "token": args.token,
     }
