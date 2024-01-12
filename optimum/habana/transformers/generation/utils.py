@@ -348,6 +348,8 @@ class GaudiGenerationMixin(GenerationMixin):
                         else:
                             assert False
                     elif model_kwargs["past_key_values"][0][0].dim() == 4:
+                        if self.config.model_type == "qwen":
+                            return (0, 0, 0, 0, 0, pad_amount)
                         return (0, 0, 0, pad_amount)  # llama, falcon
                     else:
                         assert False, "Unknown case, please handle, or dont use bucketing"
