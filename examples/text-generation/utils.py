@@ -126,7 +126,9 @@ def setup_model(args, model_dtype, model_kwargs, logger):
     if args.peft_model is not None:
         model = peft_model(args, model_dtype, logger, **model_kwargs)
     else:
+        print("loading model")
         model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs)
+        print("done loading model")
     model = model.eval().to(args.device)
 
     if args.use_hpu_graphs:
@@ -178,9 +180,11 @@ def setup_distributed_model(args, model_dtype, model_kwargs, logger):
             if args.peft_model is not None:
                 model = peft_model(args, model_dtype, logger, **model_kwargs)
             else:
+                print("loading model")
                 model = AutoModelForCausalLM.from_pretrained(
                     args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs
                 )
+                print("done loading model")
     model.eval()
 
     # Initialize the model
@@ -191,6 +195,7 @@ def setup_distributed_model(args, model_dtype, model_kwargs, logger):
     if load_to_meta:
         ds_inference_kwargs["checkpoint"] = checkpoints_json.name
 
+    torch.distributed.barrier()
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     model = model.module
     return model
@@ -289,6 +294,7 @@ def setup_generation_config(args, model, tokenizer):
     generation_config.use_cache = args.use_kv_cache
     generation_config.static_shapes = is_optimized
     generation_config.bucket_size = args.bucket_size if is_optimized else -1
+    generation_config.ignore_eos = False
     generation_config.do_sample = args.do_sample
     generation_config.num_beams = args.num_beams
     generation_config.bad_words_ids = bad_words_ids
@@ -306,8 +312,11 @@ def initialize_model(args, logger):
     init_start = time.perf_counter()
     setup_distributed(args)
     override_prints(args.global_rank == 0 or args.verbose_workers, logger)
+    print("setup env")
     setup_env(args)
+    print("setup device")
     setup_device(args)
+    print("setup seed")
     set_seed(args.seed)
     get_repo_root(args.model_name_or_path, local_rank=args.local_rank, token=args.token)
     use_deepspeed = args.world_size > 0
@@ -322,14 +331,18 @@ def initialize_model(args, logger):
         "revision": args.model_revision,
         "token": args.token,
     }
+    print("setup model")
     model = (
         setup_model(args, model_dtype, model_kwargs, logger)
         if not use_deepspeed
         else setup_distributed_model(args, model_dtype, model_kwargs, logger)
     )
+    print("setup tokenizer")
     tokenizer, model = setup_tokenizer(args, model)
+    print("setup generation_config")
     generation_config = setup_generation_config(args, model, tokenizer)
     if args.fp8:
+        print("setup qunatization")
         model = setup_quantization(model)
     init_end = time.perf_counter()
     logger.info(f"Args: {args}")
