@@ -1,4 +1,5 @@
 from .albert import gaudi_albert_forward
+"""
 from .bart import (
     gaudi_BartAttention_forward,
     gaudi_BartDecoder_forward,
@@ -10,6 +11,7 @@ from .bart import (
     gaudi_BartLearnedPositionalEmbedding,
     gaudi_BartModel_forward,
 )
+"""
 from .bloom import (
     GaudiBloomForCausalLM,
     GaudiBloomMLP,
@@ -31,6 +33,7 @@ from .esm import (
     gaudi_rot_matmul,
     gaudi_rot_vec_mul,
 )
+"""
 from .falcon import (
     GaudiFalconForCausalLM,
     GaudiFalconModel,
@@ -39,6 +42,7 @@ from .falcon import (
     gaudi_falcon_decoder_layer_forward,
     gaudi_falcon_rotary_embedding_forward,
 )
+"""
 from .gpt2 import GaudiGPT2Attention, GaudiGPT2LMHeadModel, gaudi_gpt2_block_forward, gaudi_gpt2_forward
 from .gpt_bigcode import (
     GaudiGPTBigCodeForCausalLM,
@@ -72,13 +76,25 @@ from .mistral import (
     gaudi_mistral_decoder_layer_forward,
     gaudi_mistral_model_forward,
 )
+from .mixtral import (
+    GaudiMixtralForCausalLM,
+    gaudi_mixtral_attn_forward,
+    gaudi_mixtral_decoder_layer_forward,
+    gaudi_mixtral_model_forward,
+    gaudi_mixtral_rmsnorm_forward,
+    gaudi_mixtral_SparseMoeBlock_forward,
+    gaudi_mixtral_BLockSparseTop2MLP_forward,
+
+)
 from .modeling_all_models import gaudi_conv1d_forward, gaudi_get_extended_attention_mask, gaudi_invert_attention_mask
+"""
 from .mpt import (
     GaudiMptForCausalLM,
     GaudiMptModel,
     gaudi_mpt_attention_forward,
     gaudi_mpt_block_forward,
 )
+"""
 from .opt import (
     GaudiOPTForCausalLM,
     GaudiOPTLearnedPositionalEmbedding,

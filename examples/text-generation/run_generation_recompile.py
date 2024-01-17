@@ -29,7 +29,6 @@ from utils import count_hpu_graphs, initialize_model
 
 from optimum.habana.utils import get_hpu_memory_stats
 
-
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     datefmt="%m/%d/%Y %H:%M:%S",
@@ -229,10 +228,12 @@ def setup_parser(parser):
 def main():
     parser = argparse.ArgumentParser()
     args = setup_parser(parser)
+    #import pdb;pdb.set_trace()
     model, tokenizer, generation_config = initialize_model(args, logger)
     print(' model device ',model.device)
     import habana_frameworks.torch.hpu as torch_hpu
-
+    from habana_frameworks.torch.utils.experimental import detect_recompilation_auto_model
+    model = detect_recompilation_auto_model(model)
     if args.dataset_name is None:
         # Benchmark over the prompts below
         if args.prompt:
@@ -284,6 +285,7 @@ def main():
                 profiling_steps=args.profiling_steps,
                 profiling_warmup_steps=args.profiling_warmup_steps,
             ).cpu()
+            model.analyse_dynamicity()
             return tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
         from optimum.habana.utils import HabanaProfile

@@ -139,6 +139,7 @@ def setup_model(args, model_dtype, model_kwargs, logger):
     if args.peft_model is not None:
         model = peft_model(args, model_dtype, logger, **model_kwargs)
     else:
+        print('load pretrained models with AutoModelForCausalLM.from_pretrained')
         model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, torch_dtype=model_dtype, **model_kwargs)
     model = model.eval().to(args.device)
 

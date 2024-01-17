@@ -77,6 +77,7 @@ MODELS_OPTIMIZED_WITH_STATIC_SHAPES = [
     "bart",
     "mpt",
     "mistral",
+    "mixtral",
 ]
 
 
@@ -1375,7 +1376,7 @@ class GaudiGenerationMixin(GenerationMixin):
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
 
             hpu_graphs_kwargs = self._get_hpu_graphs_kwargs(model_kwargs)
-
+            #import pdb;pdb.set_trace()
             # forward pass to get next token
             outputs = self(
                 **model_inputs,

@@ -271,6 +271,7 @@ def gaudi_mistral_model_forward(
     next_decoder_cache = () if use_cache else None
 
     for idx, decoder_layer in enumerate(self.layers):
+        print('idx,decoder_layer=',idx, decoder_layer)
         if output_hidden_states:
             all_hidden_states += (hidden_states,)
 
@@ -310,6 +311,7 @@ def gaudi_mistral_model_forward(
 
         if output_attentions:
             all_self_attns += (layer_outputs[1],)
+        import pdb;pdb.set_trace()
 
     hidden_states = self.norm(hidden_states)
 
@@ -320,6 +322,7 @@ def gaudi_mistral_model_forward(
     next_cache = next_decoder_cache if use_cache else None
     if not return_dict:
         return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
+    import pdb;pdb.set_trace()
     return BaseModelOutputWithPast(
         last_hidden_state=hidden_states,
         past_key_values=next_cache,
@@ -389,7 +392,7 @@ class GaudiMistralForCausalLM(MistralForCausalLM):
         if not return_dict:
             output = (logits,) + outputs[1:]
             return (loss,) + output if loss is not None else output
-
+        import pdb;pdb.set_trace()
         return CausalLMOutputWithPast(
             loss=loss,
             logits=logits,
@@ -410,7 +413,7 @@ class GaudiMistralForCausalLM(MistralForCausalLM):
         - from step2 when enable KV cache, slice next_position_ids from position_ids base on the token_idx
         """
         token_idx = kwargs.get("token_idx", None)
-
+        import pdb;pdb.set_trace()
         if past_key_values:
             if token_idx is None:
                 input_ids = input_ids[:, -1:]

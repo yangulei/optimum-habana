@@ -44,6 +44,7 @@ from transformers import (
     MBartTokenizer,
     MBartTokenizerFast,
     default_data_collator,
+    T5TokenizerFast
 )
 from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
 from transformers.trainer_utils import get_last_checkpoint
@@ -513,13 +514,15 @@ def main():
         embedding_size = embeddings.weight.shape[0]
     if len(tokenizer) > embedding_size:
         model.resize_token_embeddings(len(tokenizer))
-
-    if model.config.decoder_start_token_id is None and isinstance(tokenizer, (MBartTokenizer, MBartTokenizerFast)):
+    
+    
+    if model.config.decoder_start_token_id is None and isinstance(tokenizer, (MBartTokenizer, MBartTokenizerFast,T5TokenizerFast)):
         if isinstance(tokenizer, MBartTokenizer):
             model.config.decoder_start_token_id = tokenizer.lang_code_to_id[data_args.lang]
         else:
             model.config.decoder_start_token_id = tokenizer.convert_tokens_to_ids(data_args.lang)
-
+    if model.config.decoder_start_token_id is None: ##for test ??
+         model.config.decoder_start_token_id = 0
     if model.config.decoder_start_token_id is None:
         raise ValueError("Make sure that `config.decoder_start_token_id` is correctly defined")
 
