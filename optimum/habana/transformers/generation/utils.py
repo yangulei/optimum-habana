@@ -74,6 +74,8 @@ MODELS_OPTIMIZED_WITH_STATIC_SHAPES = [
     "mpt",
     "t5",
     "mistral",
+    "chatglm",
+    "baichuan",
 ]
 
 
